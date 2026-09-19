@@ -18,6 +18,8 @@ namespace Barotrauma.Sounds
         private short[] sampleBuffer = Array.Empty<short>();
         private short[] muffleBuffer = Array.Empty<short>();
 
+        private bool bufferDataFailureLogged;
+
         private readonly double durationSeconds;
         public override double? DurationSeconds => durationSeconds;
 
@@ -151,7 +153,17 @@ namespace Barotrauma.Sounds
             int alError = Al.GetError();
             if (alError != Al.NoError)
             {
-                throw new Exception("Failed to set regular buffer data for non-streamed audio! " + Al.GetErrorString(alError));
+                //Most commonly AL_INVALID_OPERATION, which means the buffer is still attached to a
+                //source. That is transient - the buffers are returned to the pool and the sound is
+                //simply skipped this time round, rather than taking the game down.
+                if (!bufferDataFailureLogged)
+                {
+                    DebugConsole.AddWarning($"Failed to set regular buffer data for non-streamed audio ({Filename}): "
+                        + Al.GetErrorString(alError) + ". The sound will not play.");
+                    bufferDataFailureLogged = true;
+                }
+                buffers.Dispose();
+                return;
             }
 
             Al.BufferData(buffers.AlMuffledBuffer, ALFormat, muffleBuffer,
@@ -160,7 +172,17 @@ namespace Barotrauma.Sounds
             alError = Al.GetError();
             if (alError != Al.NoError)
             {
-                throw new Exception("Failed to set muffled buffer data for non-streamed audio! " + Al.GetErrorString(alError));
+                //Most commonly AL_INVALID_OPERATION, which means the buffer is still attached to a
+                //source. That is transient - the buffers are returned to the pool and the sound is
+                //simply skipped this time round, rather than taking the game down.
+                if (!bufferDataFailureLogged)
+                {
+                    DebugConsole.AddWarning($"Failed to set muffled buffer data for non-streamed audio ({Filename}): "
+                        + Al.GetErrorString(alError) + ". The sound will not play.");
+                    bufferDataFailureLogged = true;
+                }
+                buffers.Dispose();
+                return;
             }
         }
 
