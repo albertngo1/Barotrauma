@@ -11,7 +11,9 @@ namespace Barotrauma.Sounds
     {
         private static readonly HashSet<uint> bufferPool = new HashSet<uint>();
 #if OSX
-        public const int MaxBuffers = 400; //TODO: check that this value works for macOS
+        //Measured ceiling of Apple's OpenAL.framework: alGenBuffers fails with
+        //AL_INVALID_VALUE at 1023, independently of buffer size. See issue #17212.
+        public const int MaxBuffers = 1023;
 #else
         public const int MaxBuffers = 32000;
 #endif
